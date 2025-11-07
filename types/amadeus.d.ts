@@ -29,12 +29,29 @@ declare module 'amadeus' {
     result: any;
   }
 
+  interface HotelOffersSearchParams {
+    cityCode: string;
+    checkInDate: string;
+    checkOutDate: string;
+    adults: number;
+    roomQuantity?: number;
+    priceRange?: string;
+    currency?: string;
+    ratings?: string[];
+    amenities?: string[];
+    radius?: number;
+    radiusUnit?: 'KM' | 'MILE';
+  }
+
   class Amadeus {
     constructor(config: AmadeusConfig);
 
     shopping: {
       flightOffersSearch: {
         get(params: FlightOffersSearchParams): Promise<AmadeusResponse>;
+      };
+      hotelOffers: {
+        get(params: HotelOffersSearchParams): Promise<AmadeusResponse>;
       };
     };
   }
