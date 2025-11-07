@@ -56,3 +56,4 @@ temp/
 Thumbs.db
 .DS_Store
 .vercel
+test-results/

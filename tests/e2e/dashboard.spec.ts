@@ -12,7 +12,7 @@ test.describe('Dashboard', () => {
 
   test('should display welcome message', async ({ page }) => {
     await expect(page.locator('text=/Welcome back/i')).toBeVisible();
-    await expect(page.locator('text=Jayaprakash')).toBeVisible();
+    await expect(page.locator('text=Jayaprakash').first()).toBeVisible();
   });
 
   test('should show statistics cards', async ({ page }) => {
@@ -24,15 +24,16 @@ test.describe('Dashboard', () => {
   });
 
   test('should show feature cards', async ({ page }) => {
-    await expect(page.locator('text=Plan Trip')).toBeVisible();
-    await expect(page.locator('text=My Trips')).toBeVisible();
-    await expect(page.locator('text=Search Flights')).toBeVisible();
-    await expect(page.locator('text=Find Hotels')).toBeVisible();
+    await expect(page.locator('text=Plan Trip').first()).toBeVisible();
+    await expect(page.locator('text=My Trips').first()).toBeVisible();
+    await expect(page.locator('text=Search Flights').first()).toBeVisible();
+    await expect(page.locator('text=Find Hotels').first()).toBeVisible();
   });
 
-  test('should show Trip Planning Agent live banner', async ({ page }) => {
-    await expect(page.locator('text=/Trip Planning Agent is Now Live/i')).toBeVisible();
-    await expect(page.locator('a:has-text("Try Trip Planning Agent")')).toBeVisible();
+  test('should show new features live banner', async ({ page }) => {
+    await expect(page.locator('text=/New Features Now Live/i')).toBeVisible();
+    await expect(page.locator('a:has-text("Try Trip Planning")').first()).toBeVisible();
+    await expect(page.locator('a:has-text("Search Flights")').first()).toBeVisible();
   });
 
   test('Plan Trip button should navigate to trip planning', async ({ page }) => {
@@ -45,12 +46,17 @@ test.describe('Dashboard', () => {
     await expect(page).toHaveURL(/\/trips$/);
   });
 
-  test('Coming Soon features should be disabled', async ({ page }) => {
-    const searchFlights = page.locator('text=Search Flights').locator('..');
-    await expect(searchFlights.locator('button:has-text("Coming Soon")')).toBeDisabled();
+  test('Search Flights button should navigate to flight search', async ({ page }) => {
+    await page.click('text=/Search Flights/i');
+    await expect(page).toHaveURL(/\/flights\/search/);
+  });
 
+  test('Coming Soon features should be disabled', async ({ page }) => {
     const findHotels = page.locator('text=Find Hotels').locator('..');
     await expect(findHotels.locator('button:has-text("Coming Soon")')).toBeDisabled();
+
+    const localExperiences = page.locator('text=Local Experiences').locator('..');
+    await expect(localExperiences.locator('button:has-text("Coming Soon")')).toBeDisabled();
   });
 
   test('should be mobile responsive', async ({ page }) => {

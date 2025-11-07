@@ -19,8 +19,8 @@ test.describe('Authentication', () => {
     // Should redirect to dashboard
     await expect(page).toHaveURL(/\/dashboard/);
 
-    // Should show user name
-    await expect(page.locator('text=Jayaprakash')).toBeVisible();
+    // Should show welcome message
+    await expect(page.locator('text=/Welcome back/i')).toBeVisible();
   });
 
   test('should show error with invalid credentials', async ({ page }) => {

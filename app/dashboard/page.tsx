@@ -134,7 +134,7 @@ export default async function DashboardPage() {
             title="🔍 Search Flights"
             description="Find the best flight deals with intelligent search and ranking"
             action="Search Flights"
-            disabled
+            href="/flights/search"
           />
           <FeatureCard
             title="🏨 Find Hotels"
@@ -166,21 +166,32 @@ export default async function DashboardPage() {
             </div>
             <div className="ml-3 flex-1">
               <h3 className="text-sm font-medium text-green-800 dark:text-green-400">
-                ✨ Trip Planning Agent is Now Live!
+                ✨ New Features Now Live!
               </h3>
               <div className="mt-2 text-sm text-green-700 dark:text-green-500">
                 <p className="mb-3">
-                  Start planning your next adventure with our AI-powered Trip Planning Agent. Get personalized destination recommendations based on your preferences!
+                  Start planning with our AI-powered Trip Planning Agent and search for flights with real-time pricing using the Flight Search feature!
                 </p>
-                <a
-                  href="/trips/plan"
-                  className="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition"
-                >
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                  Try Trip Planning Agent
-                </a>
+                <div className="flex gap-3">
+                  <a
+                    href="/trips/plan"
+                    className="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition"
+                  >
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    Try Trip Planning
+                  </a>
+                  <a
+                    href="/flights/search"
+                    className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition"
+                  >
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    Search Flights
+                  </a>
+                </div>
               </div>
             </div>
           </div>
