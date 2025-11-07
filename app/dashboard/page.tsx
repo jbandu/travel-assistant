@@ -9,11 +9,22 @@ export default async function DashboardPage() {
     redirect('/login');
   }
 
-  // Fetch user details
-  const user = await prisma.user.findUnique({
-    where: { id: currentUser.userId },
-    include: { profile: true },
-  });
+  // Fetch user details and stats
+  const [user, tripCount, bookingCount, conversationCount] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: currentUser.userId },
+      include: { profile: true },
+    }),
+    prisma.trip.count({
+      where: { userId: currentUser.userId },
+    }),
+    prisma.booking.count({
+      where: { userId: currentUser.userId },
+    }),
+    prisma.conversation.count({
+      where: { userId: currentUser.userId },
+    }),
+  ]);
 
   if (!user) {
     redirect('/login');
@@ -78,21 +89,21 @@ export default async function DashboardPage() {
           <StatCard
             icon="📊"
             title="Total Trips"
-            value="0"
+            value={tripCount.toString()}
             description="Planned trips"
             color="bg-blue-50 dark:bg-blue-900/20"
           />
           <StatCard
             icon="✈️"
             title="Bookings"
-            value="0"
+            value={bookingCount.toString()}
             description="Active bookings"
             color="bg-green-50 dark:bg-green-900/20"
           />
           <StatCard
             icon="💬"
             title="Conversations"
-            value="0"
+            value={conversationCount.toString()}
             description="AI chat sessions"
             color="bg-purple-50 dark:bg-purple-900/20"
           />
@@ -111,7 +122,13 @@ export default async function DashboardPage() {
             title="🗺️ Plan Trip"
             description="Start planning your next adventure with AI-powered recommendations"
             action="Start Planning"
-            disabled
+            href="/trips/plan"
+          />
+          <FeatureCard
+            title="📋 My Trips"
+            description="View and manage all your planned trips and itineraries"
+            action="View Trips"
+            href="/trips"
           />
           <FeatureCard
             title="🔍 Search Flights"
@@ -132,12 +149,6 @@ export default async function DashboardPage() {
             disabled
           />
           <FeatureCard
-            title="💼 My Bookings"
-            description="View and manage all your travel bookings in one place"
-            action="View Bookings"
-            disabled
-          />
-          <FeatureCard
             title="👤 Profile Settings"
             description="Manage your preferences and personalization settings"
             action="Edit Profile"
@@ -145,29 +156,31 @@ export default async function DashboardPage() {
           />
         </div>
 
-        {/* Coming Soon Banner */}
-        <div className="mt-8 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6">
+        {/* Quick Actions Banner */}
+        <div className="mt-8 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6">
           <div className="flex items-start">
             <div className="flex-shrink-0">
-              <svg className="h-6 w-6 text-yellow-600 dark:text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <svg className="h-6 w-6 text-green-600 dark:text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-400">
-                🚀 Features Coming Soon
+            <div className="ml-3 flex-1">
+              <h3 className="text-sm font-medium text-green-800 dark:text-green-400">
+                ✨ Trip Planning Agent is Now Live!
               </h3>
-              <div className="mt-2 text-sm text-yellow-700 dark:text-yellow-500">
-                <p>
-                  We're actively building the AI agents and features. Check back soon for:
+              <div className="mt-2 text-sm text-green-700 dark:text-green-500">
+                <p className="mb-3">
+                  Start planning your next adventure with our AI-powered Trip Planning Agent. Get personalized destination recommendations based on your preferences!
                 </p>
-                <ul className="list-disc list-inside mt-2 space-y-1">
-                  <li>Trip Planning Agent with destination recommendations</li>
-                  <li>Flight Search with preference-based ranking</li>
-                  <li>Hotel matching and booking</li>
-                  <li>Experience concierge for activities</li>
-                  <li>Real-time support and notifications</li>
-                </ul>
+                <a
+                  href="/trips/plan"
+                  className="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition"
+                >
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  Try Trip Planning Agent
+                </a>
               </div>
             </div>
           </div>
@@ -212,12 +225,20 @@ function FeatureCard({
   description,
   action,
   disabled = false,
+  href,
 }: {
   title: string;
   description: string;
   action: string;
   disabled?: boolean;
+  href?: string;
 }) {
+  const buttonClass = `w-full px-4 py-2 text-sm font-medium rounded-lg transition ${
+    disabled
+      ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-500 cursor-not-allowed'
+      : 'bg-blue-600 hover:bg-blue-700 text-white'
+  }`;
+
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition">
       <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
@@ -226,16 +247,15 @@ function FeatureCard({
       <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
         {description}
       </p>
-      <button
-        disabled={disabled}
-        className={`w-full px-4 py-2 text-sm font-medium rounded-lg transition ${
-          disabled
-            ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-500 cursor-not-allowed'
-            : 'bg-blue-600 hover:bg-blue-700 text-white'
-        }`}
-      >
-        {disabled ? 'Coming Soon' : action}
-      </button>
+      {disabled || !href ? (
+        <button disabled={disabled} className={buttonClass}>
+          {disabled ? 'Coming Soon' : action}
+        </button>
+      ) : (
+        <a href={href} className={`block text-center ${buttonClass}`}>
+          {action}
+        </a>
+      )}
     </div>
   );
 }
