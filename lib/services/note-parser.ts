@@ -228,8 +228,8 @@ export async function checkContradictions(
       note.category === newNote.category &&
       note.subject &&
       newNote.subject &&
-      note.subject.toLowerCase().includes(newNote.subject.toLowerCase()) ||
-      newNote.subject.toLowerCase().includes(note.subject.toLowerCase())
+      (note.subject.toLowerCase().includes(newNote.subject.toLowerCase()) ||
+        newNote.subject.toLowerCase().includes(note.subject.toLowerCase()))
   );
 
   if (relatedNotes.length === 0) {
