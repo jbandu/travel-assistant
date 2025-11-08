@@ -152,7 +152,7 @@ async function handleSubscriptionDeleted(subscription: any) {
   console.log(`❌ Subscription canceled for user ${userId}`);
 }
 
-async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
+async function handleInvoicePaymentSucceeded(invoice: any) {
   const subscriptionId = invoice.subscription as string;
 
   if (!subscriptionId) {
@@ -165,7 +165,7 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
   console.log(`💰 Invoice paid for subscription ${subscriptionId}`);
 }
 
-async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
+async function handleInvoicePaymentFailed(invoice: any) {
   const customerId = invoice.customer as string;
 
   if (!customerId) {
