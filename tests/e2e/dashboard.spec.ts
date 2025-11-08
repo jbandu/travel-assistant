@@ -37,24 +37,24 @@ test.describe('Dashboard', () => {
   });
 
   test('Plan Trip button should navigate to trip planning', async ({ page }) => {
-    await page.click('text=/Start Planning/i');
+    // Use specific link selector to avoid clicking banner button
+    await page.click('a[href="/trips/plan"]:has-text("Start Planning")');
     await expect(page).toHaveURL(/\/trips\/plan/);
   });
 
   test('My Trips button should navigate to trips list', async ({ page }) => {
-    await page.click('text=/View Trips/i');
+    await page.click('a[href="/trips"]:has-text("View Trips")');
     await expect(page).toHaveURL(/\/trips$/);
   });
 
   test('Search Flights button should navigate to flight search', async ({ page }) => {
-    await page.click('text=/Search Flights/i');
+    // Click feature card, not banner - use more specific selector
+    await page.click('a[href="/flights/search"]:has-text("Search Flights")').first();
     await expect(page).toHaveURL(/\/flights\/search/);
   });
 
   test('Coming Soon features should be disabled', async ({ page }) => {
-    const findHotels = page.locator('text=Find Hotels').locator('..');
-    await expect(findHotels.locator('button:has-text("Coming Soon")')).toBeDisabled();
-
+    // Only Local Experiences should have "Coming Soon" - Find Hotels is now active
     const localExperiences = page.locator('text=Local Experiences').locator('..');
     await expect(localExperiences.locator('button:has-text("Coming Soon")')).toBeDisabled();
   });
