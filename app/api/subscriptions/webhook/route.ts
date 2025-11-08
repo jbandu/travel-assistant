@@ -90,7 +90,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   console.log(`✅ Checkout completed for user ${userId}`);
 }
 
-async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
+async function handleSubscriptionUpdate(subscription: any) {
   const userId = subscription.metadata.userId;
 
   if (!userId) {
@@ -131,7 +131,7 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
   console.log(`✅ Subscription updated for user ${userId} to ${plan.name} (${status})`);
 }
 
-async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
+async function handleSubscriptionDeleted(subscription: any) {
   const userId = subscription.metadata.userId;
 
   if (!userId) {
