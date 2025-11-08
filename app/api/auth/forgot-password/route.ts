@@ -71,6 +71,5 @@ async function handlePOST(request: NextRequest) {
 // Export with rate limiting (3 attempts per 15 minutes)
 export const POST = withRateLimit(handlePOST, {
   maxRequests: 3,
-  windowMs: 15 * 60 * 1000,
-  message: 'Too many password reset attempts, please try again later',
+  interval: 15 * 60 * 1000,
 });
