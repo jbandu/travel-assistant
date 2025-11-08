@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
 import { CheckCircle, Sparkles, ArrowRight } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 
-export default function SubscriptionSuccessPage() {
+function SubscriptionSuccessContent() {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get('session_id');
   const [loading, setLoading] = useState(true);
@@ -57,7 +57,7 @@ export default function SubscriptionSuccessPage() {
           </h1>
 
           <p className="text-xl text-gray-600 mb-8">
-            Your subscription is now active. Let's make your travel dreams come true!
+            Your subscription is now active. Let&apos;s make your travel dreams come true!
           </p>
 
           {subscription?.trialEndsAt && (
@@ -74,7 +74,7 @@ export default function SubscriptionSuccessPage() {
         {/* What's Next */}
         <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">
-            What's Next?
+            What&apos;s Next?
           </h2>
 
           <div className="space-y-4">
@@ -214,5 +214,20 @@ export default function SubscriptionSuccessPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SubscriptionSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    }>
+      <SubscriptionSuccessContent />
+    </Suspense>
   );
 }
