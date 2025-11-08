@@ -41,6 +41,57 @@ model User {
   @@map("users")
 }
 
+// Subscription Tier Configuration (Admin-managed)
+model SubscriptionTier {
+  id          String   @id @default(uuid())
+  tierCode    String   @unique @map("tier_code") // free, traveler, explorer
+  name        String
+  description String?
+
+  // Pricing
+  monthlyPrice  Float    @default(0) @map("monthly_price")
+  yearlyPrice   Float    @default(0) @map("yearly_price")
+  currency      String   @default("usd")
+
+  // Stripe Integration
+  stripeMonthlyPriceId String?  @unique @map("stripe_monthly_price_id")
+  stripeYearlyPriceId  String?  @unique @map("stripe_yearly_price_id")
+  stripeProductId      String?  @unique @map("stripe_product_id")
+
+  // Trial
+  trialDays     Int?     @map("trial_days")
+
+  // Feature Limits
+  maxTrips          Int?     @map("max_trips") // null = unlimited
+  maxAIMessages     Int?     @map("max_ai_messages") // null = unlimited
+  maxPriceAlerts    Int?     @map("max_price_alerts")
+  maxFlightBookings Int?     @map("max_flight_bookings")
+  maxHotelBookings  Int?     @map("max_hotel_bookings")
+  maxBucketList     Int?     @map("max_bucket_list")
+
+  // Feature Flags
+  hasAdvancedAnalytics Boolean @default(false) @map("has_advanced_analytics")
+  hasPrioritySupport   Boolean @default(false) @map("has_priority_support")
+  hasCalendarSync      Boolean @default(false) @map("has_calendar_sync")
+  hasPDFExport         Boolean @default(false) @map("has_pdf_export")
+  hasConcierge         Boolean @default(false) @map("has_concierge")
+  hasFamilyAccount     Boolean @default(false) @map("has_family_account")
+  has24x7Support       Boolean @default(false) @map("has_24x7_support")
+
+  // Display
+  isActive      Boolean  @default(true) @map("is_active")
+  isPopular     Boolean  @default(false) @map("is_popular")
+  displayOrder  Int      @default(0) @map("display_order")
+
+  // Metadata
+  features      Json     @default("[]") // Array of feature descriptions
+
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("subscription_tiers")
+}
+
 // User Profile - Preferences and Customer 360 data
 model UserProfile {
   id        String   @id @default(uuid())
