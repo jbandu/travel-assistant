@@ -91,6 +91,7 @@ export async function POST(req: NextRequest) {
 
     async function createNewPaymentIntent() {
       if (!booking) throw new Error('Booking not found');
+      if (!currentUser) throw new Error('User not authenticated');
       return await stripe.paymentIntents.create({
         amount,
         currency: booking.currency.toLowerCase(),
