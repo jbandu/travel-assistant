@@ -204,6 +204,12 @@ model Trip {
   travelerCount   Int  @default(1) @map("traveler_count")
   travelerDetails Json @default("[]") @map("traveler_details")
 
+  // NEW: Unified Planning Validation
+  hasConflicts     Boolean   @default(false) @map("has_conflicts")
+  lastValidatedAt  DateTime? @map("last_validated_at")
+  conflictDetails  Json      @default("[]") @map("conflict_details")
+  // [{ type: "DATE_OVERLAP", severity: "ERROR", message: "...", affectedBookings: [...] }]
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -214,7 +220,7 @@ model Trip {
   @@map("trips")
 }
 
-// Booking model - Flights, hotels, activities
+// Booking model - Flights, hotels, activities, car rentals
 model Booking {
   id              String   @id @default(uuid())
   tripId          String?  @map("trip_id")
@@ -222,19 +228,32 @@ model Booking {
   userId          String   @map("user_id")
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  bookingType     String   @map("booking_type") // flight, hotel, activity, car_rental
-  status          String   @default("pending") // pending, confirmed, cancelled, completed
+  bookingType     String   @map("booking_type") // FLIGHT, HOTEL, CAR_RENTAL, ACTIVITY, RESTAURANT
+  status          String   @default("MOCK_RESERVED") // MOCK_RESERVED, CONFIRMED, CANCELLED, EXPIRED
+
+  // NEW: Structured fields for validation (required for cross-checking)
+  startDate       DateTime  @map("start_date")
+  endDate         DateTime? @map("end_date") // Null for point-in-time activities
+  startLocation   String    @map("start_location") // City or airport code (e.g., "NYC", "PAR")
+  endLocation     String?   @map("end_location") // For flights, car rentals (destination)
 
   // Booking references
-  confirmationCode String?  @unique @map("confirmation_code")
+  confirmationCode String?  @unique @map("confirmation_code") // Auto-generated mock confirmation
   supplierReference String? @map("supplier_reference")
-  supplierName     String?  @map("supplier_name")
+  supplierName     String?  @map("supplier_name") // "American Airlines", "Hilton Paris"
 
-  // Booking details (flexible JSONB)
+  // Booking details (flexible JSONB - stores full Amadeus response)
   bookingDetails Json @map("booking_details")
-  // For flights: {origin, destination, departureTime, arrivalTime, airline, flightNumber, passengers, seats}
-  // For hotels: {hotelName, checkIn, checkOut, roomType, guests, address}
-  // For activities: {activityName, date, time, location, participants}
+  // For FLIGHT: Full FlightOffer from Amadeus
+  // For HOTEL: Full HotelOffer from Amadeus
+  // For CAR_RENTAL: Car rental details
+  // For ACTIVITY: Activity details
+
+  // Type-specific details (parsed from bookingDetails for quick access)
+  flightDetails   Json? @map("flight_details") // { airline, flightNumber, cabin, segments: [...] }
+  hotelDetails    Json? @map("hotel_details")  // { hotelName, roomType, amenities, address }
+  carDetails      Json? @map("car_details")    // { carType, company, pickupLocation, dropoffLocation }
+  activityDetails Json? @map("activity_details") // { name, duration, meetingPoint }
 
   // Financial
   totalAmount     Decimal @map("total_amount") @db.Decimal(10, 2)
@@ -246,10 +265,17 @@ model Booking {
   cancellationDeadline DateTime? @map("cancellation_deadline")
   cancellationFee      Decimal?  @map("cancellation_fee") @db.Decimal(10, 2)
 
+  // Notes & metadata
+  notes           String?
+  tags            String[]  @default([]) // ["non-refundable", "priority-boarding", "breakfast-included"]
+
   bookingDate DateTime @default(now()) @map("booking_date")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
+  @@index([tripId, startDate])
+  @@index([tripId, bookingType])
+  @@index([userId])
   @@map("bookings")
 }
 

@@ -7,12 +7,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { encrypt, decryptFields } from '@/lib/security/encryption';
 
 /**
  * GET /api/profile
  * Fetches complete user profile including all knowledge graph data
  */
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const currentUser = await getCurrentUser();
 
@@ -61,6 +62,23 @@ export async function GET(req: NextRequest) {
     // Calculate profile completion
     const completion = calculateProfileCompletion(user.profile);
 
+    // Decrypt sensitive fields before returning
+    const decryptedProfile = user.profile ? {
+      ...user.profile,
+      personalInfo: user.profile.personalInfo || null,
+      travelDocs: user.profile.travelDocs ? decryptFields(user.profile.travelDocs, [
+        'passportNumber'
+      ]) : null,
+      accessibility: user.profile.accessibility ? decryptFields(user.profile.accessibility, [
+        'medicalConditions',
+        'medicationRequirements'
+      ]) : null,
+      dietary: user.profile.dietary ? decryptFields(user.profile.dietary, [
+        'allergies',
+        'specificRestrictions'
+      ]) : null,
+    } : null;
+
     return NextResponse.json({
       user: {
         id: user.id,
@@ -68,7 +86,7 @@ export async function GET(req: NextRequest) {
         firstName: user.firstName,
         lastName: user.lastName
       },
-      profile: user.profile,
+      profile: decryptedProfile,
       completion
     });
 
@@ -128,14 +146,22 @@ export async function PUT(req: NextRequest) {
 
     switch (section) {
       case 'personalInfo':
+        // Encrypt sensitive personal info fields
+        const encryptedPersonalInfo = {
+          ...data,
+          phoneNumber: data.phoneNumber ? encrypt(data.phoneNumber) : null,
+          emergencyContact: data.emergencyContact ? encrypt(data.emergencyContact) : null,
+        };
         updatedData = await prisma.personalInfo.upsert({
           where: { profileId: profile.id },
-          update: data,
+          update: encryptedPersonalInfo,
           create: {
             profileId: profile.id,
-            ...data
+            ...encryptedPersonalInfo
           }
         });
+        // Decrypt for response
+        updatedData = decryptFields(updatedData, ['phoneNumber', 'emergencyContact']);
         break;
 
       case 'travelStyle':
@@ -150,36 +176,61 @@ export async function PUT(req: NextRequest) {
         break;
 
       case 'dietary':
+        // Encrypt sensitive dietary fields
+        const encryptedDietary = {
+          ...data,
+          allergies: data.allergies ? encrypt(data.allergies) : null,
+          specificRestrictions: data.specificRestrictions ? encrypt(data.specificRestrictions) : null,
+        };
         updatedData = await prisma.dietaryProfile.upsert({
           where: { profileId: profile.id },
-          update: data,
+          update: encryptedDietary,
           create: {
             profileId: profile.id,
-            ...data
+            ...encryptedDietary
           }
         });
+        // Decrypt for response
+        updatedData = decryptFields(updatedData, ['allergies', 'specificRestrictions']);
         break;
 
       case 'accessibility':
+        // Encrypt sensitive accessibility fields
+        const encryptedAccessibility = {
+          ...data,
+          medicalConditions: data.medicalConditions ? encrypt(data.medicalConditions) : null,
+          medicationRequirements: data.medicationRequirements ? encrypt(data.medicationRequirements) : null,
+        };
         updatedData = await prisma.accessibilityInfo.upsert({
           where: { profileId: profile.id },
-          update: data,
+          update: encryptedAccessibility,
           create: {
             profileId: profile.id,
-            ...data
+            ...encryptedAccessibility
           }
         });
+        // Decrypt for response
+        updatedData = decryptFields(updatedData, ['medicalConditions', 'medicationRequirements']);
         break;
 
       case 'travelDocs':
+        // Encrypt sensitive travel document fields
+        const encryptedTravelDocs = {
+          ...data,
+          passportNumber: data.passportNumber ? encrypt(data.passportNumber) : null,
+          visaInfo: data.visaInfo ? encrypt(data.visaInfo) : null,
+          travelInsurancePolicy: data.travelInsurancePolicy ? encrypt(data.travelInsurancePolicy) : null,
+        };
         updatedData = await prisma.travelDocuments.upsert({
           where: { profileId: profile.id },
-          update: data,
+          update: encryptedTravelDocs,
           create: {
             profileId: profile.id,
-            ...data
+            ...encryptedTravelDocs
           }
         });
+        // Decrypt for response
+        updatedData = decryptFields(updatedData, ['passportNumber', 'visaInfo', 'travelInsurancePolicy']);
         break;
 
       case 'user':

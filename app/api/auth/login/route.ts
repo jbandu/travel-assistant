@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { comparePassword, generateToken, setAuthCookie } from '@/lib/auth';
+import { withRateLimit, RateLimitPresets } from '@/lib/security/rate-limit';
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   try {
     const body = await request.json();
     const { email, password } = body;
@@ -80,3 +81,6 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+// Export with rate limiting (5 attempts per 15 minutes)
+export const POST = withRateLimit(handlePOST, RateLimitPresets.auth);
