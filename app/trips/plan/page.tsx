@@ -9,18 +9,10 @@ interface Message {
   timestamp: string;
 }
 
-interface ActivityLog {
-  type: 'info' | 'error' | 'success';
-  message: string;
-  timestamp: string;
-  icon?: string;
-}
-
 interface ChatResponse {
   conversationId: string;
   message: string;
   suggestions?: string[];
-  activityLogs?: ActivityLog[];
 }
 
 export default function TripPlanningPage() {
@@ -28,10 +20,7 @@ export default function TripPlanningPage() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
-  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
-  const [showDebugPanel, setShowDebugPanel] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const debugEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -40,12 +29,6 @@ export default function TripPlanningPage() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
-
-  useEffect(() => {
-    if (debugEndRef.current) {
-      debugEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [activityLogs]);
 
   const handleSend = async (messageText?: string) => {
     const textToSend = messageText || input;
@@ -78,11 +61,6 @@ export default function TripPlanningPage() {
         throw new Error(data.message || 'Failed to send message');
       }
 
-      // Update activity logs if available
-      if (data.activityLogs) {
-        setActivityLogs(data.activityLogs);
-      }
-
       // Save conversation ID
       if (data.conversationId && !conversationId) {
         setConversationId(data.conversationId);
@@ -96,7 +74,6 @@ export default function TripPlanningPage() {
       };
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
-      console.error('Send message error:', error);
       const errorMessage: Message = {
         role: 'assistant',
         content:
@@ -120,7 +97,6 @@ export default function TripPlanningPage() {
     setMessages([]);
     setConversationId(null);
     setInput('');
-    setActivityLogs([]);
   };
 
   return (
@@ -158,15 +134,7 @@ export default function TripPlanningPage() {
                 </p>
               </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={() => setShowDebugPanel(!showDebugPanel)}
-                className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition"
-                title="Toggle debug panel"
-              >
-                {showDebugPanel ? '🔍 Hide Debug' : '🔍 Show Debug'}
-              </button>
-              <button
+            <button
                 onClick={startNewConversation}
                 className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition"
               >
@@ -326,64 +294,6 @@ export default function TripPlanningPage() {
         </div>
         </main>
       </div>
-
-      {/* Debug Activity Log Panel */}
-      {showDebugPanel && (
-        <aside className="w-96 bg-gray-900 text-gray-100 border-l border-gray-700 flex flex-col">
-          <div className="px-4 py-3 bg-gray-800 border-b border-gray-700 flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <span className="text-lg">🔍</span>
-              <h3 className="font-semibold">Activity Log (DEV)</h3>
-            </div>
-            <button
-              onClick={() => setActivityLogs([])}
-              className="px-2 py-1 text-xs bg-gray-700 hover:bg-gray-600 rounded transition"
-              title="Clear logs"
-            >
-              Clear
-            </button>
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-4 space-y-2 text-xs font-mono">
-            {activityLogs.length === 0 ? (
-              <div className="text-gray-500 text-center py-8">
-                No activity yet. Send a message to see logs.
-              </div>
-            ) : (
-              activityLogs.map((log, index) => (
-                <div
-                  key={index}
-                  className={`p-2 rounded border-l-2 ${
-                    log.type === 'error'
-                      ? 'bg-red-900/20 border-red-500 text-red-300'
-                      : log.type === 'success'
-                      ? 'bg-green-900/20 border-green-500 text-green-300'
-                      : 'bg-blue-900/20 border-blue-500 text-blue-300'
-                  }`}
-                >
-                  <div className="flex items-start space-x-2">
-                    <span className="flex-shrink-0 text-sm">
-                      {log.icon || '•'}
-                    </span>
-                    <div className="flex-1 break-words">
-                      <div className="whitespace-pre-wrap">{log.message}</div>
-                      <div className="text-gray-500 text-[10px] mt-1">
-                        {new Date(log.timestamp).toLocaleTimeString()}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-            <div ref={debugEndRef} />
-          </div>
-
-          <div className="px-4 py-2 bg-gray-800 border-t border-gray-700 text-[10px] text-gray-500">
-            <p>⚠️ This panel is for development only.</p>
-            <p>Shows LLM routing, API calls, complexity analysis & costs.</p>
-          </div>
-        </aside>
-      )}
     </div>
   );
 }
