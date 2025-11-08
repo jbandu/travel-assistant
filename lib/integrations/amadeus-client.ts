@@ -132,7 +132,11 @@ export interface HotelOffer {
       distanceUnit: string;
     };
     address?: {
+      lines?: string[];
+      postalCode?: string;
+      cityName?: string;
       countryCode: string;
+      stateCode?: string;
     };
     contact?: {
       phone: string;
