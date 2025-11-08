@@ -90,6 +90,7 @@ export async function POST(req: NextRequest) {
     }
 
     async function createNewPaymentIntent() {
+      if (!booking) throw new Error('Booking not found');
       return await stripe.paymentIntents.create({
         amount,
         currency: booking.currency.toLowerCase(),
