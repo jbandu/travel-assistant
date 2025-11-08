@@ -51,6 +51,14 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
           JWT_SECRET: test-jwt-secret-for-ci-only
           NEXT_PUBLIC_APP_URL: http://localhost:3000
+          # API Keys for external services (using secrets or dummy values for build)
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY || 'sk-ant-test-key-for-build-only' }}
+          AMADEUS_API_KEY: ${{ secrets.AMADEUS_API_KEY || 'test-amadeus-key' }}
+          AMADEUS_API_SECRET: ${{ secrets.AMADEUS_API_SECRET || 'test-amadeus-secret' }}
+          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY || 'test-unsplash-key' }}
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY || 'test-maps-key' }}
+          MAPBOX_ACCESS_TOKEN: ${{ secrets.MAPBOX_ACCESS_TOKEN || 'test-mapbox-token' }}
+          NEXT_PUBLIC_MAPBOX_TOKEN: ${{ secrets.MAPBOX_ACCESS_TOKEN || 'test-mapbox-token' }}
 
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps chromium
@@ -71,6 +79,15 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
           JWT_SECRET: test-jwt-secret-for-ci-only
           PLAYWRIGHT_TEST_BASE_URL: http://localhost:3002
+          # API Keys for tests
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY || 'sk-ant-test-key-for-build-only' }}
+          AMADEUS_API_KEY: ${{ secrets.AMADEUS_API_KEY || 'test-amadeus-key' }}
+          AMADEUS_API_SECRET: ${{ secrets.AMADEUS_API_SECRET || 'test-amadeus-secret' }}
+          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY || 'test-unsplash-key' }}
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY || 'test-maps-key' }}
+          MAPBOX_ACCESS_TOKEN: ${{ secrets.MAPBOX_ACCESS_TOKEN || 'test-mapbox-token' }}
+          NEXT_PUBLIC_MAPBOX_TOKEN: ${{ secrets.MAPBOX_ACCESS_TOKEN || 'test-mapbox-token' }}
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
 
       - name: Upload test results
         if: always()
