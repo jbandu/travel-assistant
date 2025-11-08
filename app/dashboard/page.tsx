@@ -52,14 +52,18 @@ export default async function DashboardPage() {
           </div>
 
           <div className="flex items-center space-x-4">
-            <div className="text-right">
+            <a
+              href="/profile"
+              className="text-right hover:opacity-80 transition-opacity cursor-pointer"
+              title="Go to Profile"
+            >
               <p className="text-sm font-medium text-gray-900 dark:text-white">
                 {user.firstName} {user.lastName}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">
                 {user.email}
               </p>
-            </div>
+            </a>
             <form action="/api/auth/logout" method="POST">
               <button
                 type="submit"
@@ -152,7 +156,7 @@ export default async function DashboardPage() {
             title="👤 Profile Settings"
             description="Manage your preferences and personalization settings"
             action="Edit Profile"
-            disabled
+            href="/profile"
           />
         </div>
 

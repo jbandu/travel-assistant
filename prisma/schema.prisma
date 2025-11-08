@@ -24,10 +24,11 @@ model User {
   lastLoginAt   DateTime? @map("last_login_at")
 
   // Relations
-  profile       UserProfile?
-  trips         Trip[]
-  bookings      Booking[]
-  conversations Conversation[]
+  profile             UserProfile?
+  trips               Trip[]
+  bookings            Booking[]
+  conversations       Conversation[]
+  linkedCompanions    TravelCompanion[] // When this user is linked as a companion
 
   @@map("users")
 }
@@ -38,49 +39,143 @@ model UserProfile {
   userId    String   @unique @map("user_id")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Travel Preferences (using JSONB for flexibility)
+  // Legacy JSONB preferences (kept for backward compatibility)
   preferences Json @default("{}")
-  // Example structure:
-  // {
-  //   // Trip Planning Preferences
-  //   "interests": ["beach", "culture", "adventure", "food", "nightlife", "nature", "history"],
-  //   "travelStyle": "budget" | "mid-range" | "luxury",
-  //   "preferredBudgetRange": { "min": 1000, "max": 5000, "currency": "USD" },
-  //   "accommodationType": ["hotel", "hostel", "airbnb", "resort"],
-  //   "activityLevel": "relaxed" | "moderate" | "active",
-  //   "groupPreference": "solo" | "couple" | "family" | "friends",
-  //
-  //   // Travel History & Context
-  //   "visitedCountries": ["USA", "FRA", "JPN"],
-  //   "favoriteDestinations": ["Paris", "Tokyo", "New York"],
-  //   "bucketList": ["Iceland", "New Zealand", "Machu Picchu"],
-  //   "pastTrips": [{"destination": "Paris", "rating": 5, "highlights": "Eiffel Tower, Louvre"}],
-  //
-  //   // Flight Preferences
-  //   "preferredCabinClass": "economy" | "premium_economy" | "business" | "first",
-  //   "preferredAirlines": ["UA", "DL"],
-  //   "seatPreference": "window" | "aisle" | "middle",
-  //   "mealPreference": "vegetarian" | "vegan" | "halal" | "kosher" | "standard",
-  //   "dietaryRestrictions": ["gluten-free", "nut-allergy"],
-  //
-  //   // Personal Context
-  //   "age": 30,
-  //   "occupation": "Software Engineer",
-  //   "languages": ["English", "Spanish"],
-  //   "timezone": "America/New_York",
-  //
-  //   // Notification Preferences
-  //   "notificationPreferences": {
-  //     "email": true,
-  //     "sms": false,
-  //     "push": true
-  //   }
-  // }
+
+  // NEW: Structured profile data (Knowledge Graph)
+  personalInfo      PersonalInfo?
+  travelStyle       TravelStyle?
+  dietary           DietaryProfile?
+  accessibility     AccessibilityInfo?
+  travelDocs        TravelDocuments?
+
+  // Relations
+  companions        TravelCompanion[]
+  tripMemories      TripMemory[]
+  bucketList        BucketListItem[]
+  experiences       Experience[]
+
+  // Engagement tracking
+  profileCompletion Int      @default(0) @map("profile_completion")
+  updateStreak      Int      @default(0) @map("update_streak")
+  lastStreakDate    DateTime? @map("last_streak_date")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("user_profiles")
+}
+
+// Personal Information
+model PersonalInfo {
+  id              String      @id @default(uuid())
+  profileId       String      @unique @map("profile_id")
+  profile         UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  middleName      String?     @map("middle_name")
+  preferredName   String?     @map("preferred_name")
+  dateOfBirth     DateTime?   @map("date_of_birth")
+  gender          String?
+  occupation      String?
+  industry        String?
+
+  // Location
+  city            String?
+  state           String?
+  country         String?
+  timezone        String?
+
+  // Languages & culture
+  languages       Json        @default("[]") // [{ language: "English", proficiency: "native" }]
+  culturalBg      String?     @map("cultural_background")
+
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  @@map("personal_info")
+}
+
+// Travel Style & Preferences
+model TravelStyle {
+  id                String      @id @default(uuid())
+  profileId         String      @unique @map("profile_id")
+  profile           UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  budgetLevel       String?     @map("budget_level") // budget/mid-range/luxury/ultra-luxury
+  pacePreference    String?     @map("pace_preference") // slow/moderate/fast/jam-packed
+  activityLevel     String?     @map("activity_level") // relaxed/moderate/active/extreme
+  planningStyle     String?     @map("planning_style") // spontaneous/flexible/detailed/rigid
+
+  accommodationPrefs Json       @default("[]") @map("accommodation_prefs") // ["hotel", "airbnb", "resort"]
+  transportPrefs     Json       @default("[]") @map("transport_prefs") // ["flight", "train", "road-trip"]
+
+  // Interests with intensity levels
+  interests         Json        @default("[]") // [{ interest: "beach", intensity: 5, level: "enthusiast" }]
+
+  // Flight preferences
+  preferredCabinClass String?   @map("preferred_cabin_class") // economy/premium_economy/business/first
+  seatPreference      String?   @map("seat_preference") // window/aisle/middle
+  preferredAirlines   Json      @default("[]") @map("preferred_airlines")
+
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @updatedAt @map("updated_at")
+
+  @@map("travel_styles")
+}
+
+// Dietary Profile
+model DietaryProfile {
+  id                String      @id @default(uuid())
+  profileId         String      @unique @map("profile_id")
+  profile           UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  restrictions      Json        @default("[]") // ["vegetarian", "gluten-free", "nut-allergy"]
+  allergies         Json        @default("[]") // ["peanuts", "shellfish"]
+  favoriteCuisines  Json        @default("[]") @map("favorite_cuisines") // ["Italian", "Japanese"]
+  adventurousScore  Int?        @map("adventurous_score") // 1-10
+  specificDislikes  Json        @default("[]") @map("specific_dislikes")
+
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @updatedAt @map("updated_at")
+
+  @@map("dietary_profiles")
+}
+
+// Accessibility & Health Information
+model AccessibilityInfo {
+  id                  String      @id @default(uuid())
+  profileId           String      @unique @map("profile_id")
+  profile             UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  physicalLimitations Json        @default("[]") @map("physical_limitations")
+  accessibilityNeeds  Json        @default("[]") @map("accessibility_needs")
+  medicalNotes        String?     @map("medical_notes")
+  fitnessLevel        String?     @map("fitness_level") // low/moderate/high/athlete
+
+  createdAt           DateTime    @default(now()) @map("created_at")
+  updatedAt           DateTime    @updatedAt @map("updated_at")
+
+  @@map("accessibility_info")
+}
+
+// Travel Documents & Memberships
+model TravelDocuments {
+  id                String      @id @default(uuid())
+  profileId         String      @unique @map("profile_id")
+  profile           UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  passportNumber    String?     @map("passport_number")
+  passportExpiry    DateTime?   @map("passport_expiry")
+  passportCountry   String?     @map("passport_country")
+
+  visaHistory       Json        @default("[]") @map("visa_history")
+  loyaltyPrograms   Json        @default("[]") @map("loyalty_programs") // [{ program: "UA", number: "..." }]
+  travelBenefits    Json        @default("[]") @map("travel_benefits") // ["TSA PreCheck", "Global Entry"]
+
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @updatedAt @map("updated_at")
+
+  @@map("travel_documents")
 }
 
 // Trip model - Core trip planning data
@@ -182,4 +277,157 @@ model Conversation {
   closedAt       DateTime? @map("closed_at")
 
   @@map("conversations")
+}
+
+// === KNOWLEDGE GRAPH MODELS ===
+
+// Travel Companions (Family, Friends)
+model TravelCompanion {
+  id                String      @id @default(uuid())
+  profileId         String      @map("profile_id")
+  profile           UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  // If they're also a user, link their account
+  linkedUserId      String?     @map("linked_user_id")
+  linkedUser        User?       @relation(fields: [linkedUserId], references: [id], onDelete: SetNull)
+
+  // Basic info
+  firstName         String      @map("first_name")
+  lastName          String      @map("last_name")
+  relationship      String      // spouse/partner/child/parent/sibling/friend/colleague
+  dateOfBirth       DateTime?   @map("date_of_birth")
+
+  // Travel together stats
+  travelFrequency   String?     @map("travel_frequency") // regular/occasional/rare
+  decisionInfluence Int         @default(5) @map("decision_influence") // 1-10
+
+  // Their preferences (simplified subset)
+  preferences       Json        @default("{}")
+  dietary           Json        @default("{}")
+  accessibility     Json        @default("{}")
+
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @updatedAt @map("updated_at")
+
+  @@index([profileId])
+  @@map("travel_companions")
+}
+
+// Trip Memories - Detailed past trip records
+model TripMemory {
+  id                String      @id @default(uuid())
+  profileId         String      @map("profile_id")
+  profile           UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  // Trip details
+  title             String
+  destinations      Json        @default("[]") // [{ city: "Paris", country: "France", arrival: "2024-01-01" }]
+  startDate         DateTime    @map("start_date")
+  endDate           DateTime    @map("end_date")
+  tripType          String      @map("trip_type") // leisure/business/family/solo/group
+
+  // Companions
+  companions        Json        @default("[]") // [{ id: "...", name: "...", relationship: "..." }]
+
+  // Experience data
+  rating            Int         // 1-5
+  highlights        String[]    @default([])
+  wouldReturn       String      @map("would_return") // yes/no/conditional
+  lessonsLearned    String[]    @default([]) @map("lessons_learned")
+
+  // Financial
+  budgetPlanned     Decimal?    @map("budget_planned") @db.Decimal(10, 2)
+  budgetActual      Decimal?    @map("budget_actual") @db.Decimal(10, 2)
+  currency          String      @default("USD")
+
+  // Media & notes
+  photos            Json        @default("[]") // [{ url: "...", caption: "..." }]
+  notes             String?
+
+  // Sharing
+  isPublic          Boolean     @default(false) @map("is_public")
+  shareableSlug     String?     @unique @map("shareable_slug")
+
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @updatedAt @map("updated_at")
+
+  @@index([profileId])
+  @@index([startDate])
+  @@map("trip_memories")
+}
+
+// Bucket List Items - Dream destinations
+model BucketListItem {
+  id                String      @id @default(uuid())
+  profileId         String      @map("profile_id")
+  profile           UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  destination       String
+  country           String
+  region            String?
+
+  // Priority & timeline
+  priority          String      // must-do/someday/dream
+  timeframe         String?     // this-year/5-years/10-years/retirement
+  status            String      @default("wishlist") // wishlist/researching/planning/booked/completed
+
+  // Planning
+  estimatedBudget   Decimal?    @map("estimated_budget") @db.Decimal(10, 2)
+  currency          String      @default("USD")
+
+  // Details
+  companions        Json        @default("[]") // Who they want to go with
+  experiences       String[]    @default([]) // Specific things they want to do
+  notes             String?
+  inspiration       Json        @default("[]") // Photos, articles, links
+
+  // Metadata
+  position          Int         @default(0) // For ordering
+  dateAdded         DateTime    @default(now()) @map("date_added")
+  targetDate        DateTime?   @map("target_date")
+  completedDate     DateTime?   @map("completed_date")
+  linkedTripId      String?     @map("linked_trip_id") // If completed, link to TripMemory
+
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @updatedAt @map("updated_at")
+
+  @@index([profileId])
+  @@index([priority])
+  @@index([status])
+  @@map("bucket_list_items")
+}
+
+// Experiences - Activities, restaurants, hotels, events
+model Experience {
+  id                String      @id @default(uuid())
+  profileId         String      @map("profile_id")
+  profile           UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  experienceType    String      @map("experience_type") // activity/restaurant/hotel/event/tour
+  name              String
+  destination       String
+  city              String?
+  country           String?
+
+  // Experience details
+  date              DateTime
+  rating            Int         // 1-5
+  review            String?
+  photos            Json        @default("[]")
+
+  // Context
+  tripMemoryId      String?     @map("trip_memory_id") // Link to trip if applicable
+  companions        Json        @default("[]")
+  priceLevel        String?     @map("price_level") // budget/moderate/expensive/luxury
+
+  // Knowledge graph tags
+  tags              String[]    @default([]) // ["romantic", "instagram-worthy", "local-favorite"]
+
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @updatedAt @map("updated_at")
+
+  @@index([profileId])
+  @@index([experienceType])
+  @@index([destination])
+  @@map("experiences")
 }
