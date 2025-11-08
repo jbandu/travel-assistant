@@ -59,11 +59,8 @@ async function handlePOST(request: NextRequest) {
       role: user.role,
     });
 
-    // Set cookie
-    await setAuthCookie(token);
-
-    // Return success
-    return NextResponse.json({
+    // Create response
+    const response = NextResponse.json({
       success: true,
       user: {
         id: user.id,
@@ -73,6 +70,19 @@ async function handlePOST(request: NextRequest) {
         role: user.role,
       },
     });
+
+    // Set cookie on response
+    response.cookies.set({
+      name: 'auth_token',
+      value: token,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: '/',
+    });
+
+    return response;
   } catch (error) {
     console.error('Login error:', error);
     return NextResponse.json(

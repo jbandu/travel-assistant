@@ -23,6 +23,10 @@ model User {
   updatedAt     DateTime  @updatedAt @map("updated_at")
   lastLoginAt   DateTime? @map("last_login_at")
 
+  // Password Reset
+  passwordResetToken   String?   @map("password_reset_token")
+  passwordResetExpires DateTime? @map("password_reset_expires")
+
   // Subscription
   subscriptionPlan      String    @default("free") @map("subscription_plan") // free, traveler, explorer
   subscriptionStatus    String    @default("active") @map("subscription_status") // active, canceled, past_due, trialing
