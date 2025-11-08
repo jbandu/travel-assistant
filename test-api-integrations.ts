@@ -243,6 +243,23 @@ async function runAllTests() {
   console.log('🔧 Environment Configuration');
   console.log('='.repeat(60));
 
+  // Helper to check if API key is actually configured (not a dummy value)
+  const isConfigured = (key: string, value: string | undefined): boolean => {
+    if (!value) return false;
+
+    // Check against actual dummy values used in tests
+    const dummyValues = [
+      'test-amadeus-key',
+      'test-amadeus-secret',
+      'test-unsplash-key',
+      'test-maps-key',
+      'test-mapbox-token',
+      'sk-ant-test-key-for-build-only',
+    ];
+
+    return !dummyValues.includes(value);
+  };
+
   const envVars = [
     'DATABASE_URL',
     'ANTHROPIC_API_KEY',
@@ -256,7 +273,7 @@ async function runAllTests() {
   console.log('');
   envVars.forEach(key => {
     const value = process.env[key];
-    const status = value && value !== `test-${key.toLowerCase().replace(/_/g, '-')}` && value !== 'sk-ant-test-key-for-build-only'
+    const status = isConfigured(key, value)
       ? '✅ Configured'
       : '⚠️  Not configured (using dummy value)';
     console.log(`${key}: ${status}`);
