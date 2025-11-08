@@ -3,7 +3,7 @@
  * Manages mock reservations and cross-validation for unified travel planning
  */
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import type { FlightOffer } from '@/lib/integrations/amadeus-client';
 
 const prisma = new PrismaClient();
@@ -114,14 +114,14 @@ export class BookingService {
         endLocation: lastSegment.arrival.iataCode,
         confirmationCode: this.generateConfirmationCode('FLIGHT'),
         supplierName: firstSegment.carrierCode,
-        bookingDetails: flightOffer, // Full Amadeus response
+        bookingDetails: flightOffer as unknown as Prisma.JsonObject, // Full Amadeus response
         flightDetails: {
           offerId: flightOffer.id,
           itineraries: flightOffer.itineraries,
           price: flightOffer.price,
           validatingAirlineCodes: flightOffer.validatingAirlineCodes,
           travelerPricings: flightOffer.travelerPricings,
-        },
+        } as unknown as Prisma.JsonObject,
         totalAmount: parseFloat(flightOffer.price.total),
         currency: flightOffer.price.currency,
       },
@@ -136,7 +136,7 @@ export class BookingService {
       data: {
         hasConflicts: conflicts.some(c => c.severity === 'ERROR'),
         lastValidatedAt: new Date(),
-        conflictDetails: conflicts,
+        conflictDetails: conflicts as unknown as Prisma.JsonArray,
       },
     });
 
@@ -161,7 +161,7 @@ export class BookingService {
         endLocation: null,
         confirmationCode: this.generateConfirmationCode('HOTEL'),
         supplierName: hotelOffer.name,
-        bookingDetails: hotelOffer, // Full hotel offer
+        bookingDetails: hotelOffer as unknown as Prisma.JsonObject, // Full hotel offer
         hotelDetails: {
           hotelId: hotelOffer.hotelId,
           name: hotelOffer.name,
@@ -169,7 +169,7 @@ export class BookingService {
           checkOutDate: hotelOffer.checkOutDate,
           roomType: hotelOffer.roomType,
           address: hotelOffer.address,
-        },
+        } as unknown as Prisma.JsonObject,
         totalAmount: parseFloat(hotelOffer.price.total),
         currency: hotelOffer.price.currency,
       },
@@ -184,7 +184,7 @@ export class BookingService {
       data: {
         hasConflicts: conflicts.some(c => c.severity === 'ERROR'),
         lastValidatedAt: new Date(),
-        conflictDetails: conflicts,
+        conflictDetails: conflicts as unknown as Prisma.JsonArray,
       },
     });
 
@@ -209,12 +209,12 @@ export class BookingService {
         endLocation: rental.dropoffLocation,
         confirmationCode: this.generateConfirmationCode('CAR_RENTAL'),
         supplierName: rental.company,
-        bookingDetails: rental, // Full rental details
+        bookingDetails: rental as unknown as Prisma.JsonObject, // Full rental details
         carDetails: {
           vehicleType: rental.vehicleType,
           pickupLocation: rental.pickupLocation,
           dropoffLocation: rental.dropoffLocation,
-        },
+        } as unknown as Prisma.JsonObject,
         totalAmount: parseFloat(rental.price.total),
         currency: rental.price.currency,
       },
@@ -227,7 +227,7 @@ export class BookingService {
       data: {
         hasConflicts: conflicts.some(c => c.severity === 'ERROR'),
         lastValidatedAt: new Date(),
-        conflictDetails: conflicts,
+        conflictDetails: conflicts as unknown as Prisma.JsonArray,
       },
     });
 
@@ -257,12 +257,12 @@ export class BookingService {
         endLocation: null,
         confirmationCode: this.generateConfirmationCode('ACTIVITY'),
         supplierName: activity.name,
-        bookingDetails: activity, // Full activity details
+        bookingDetails: activity as unknown as Prisma.JsonObject, // Full activity details
         activityDetails: {
           name: activity.name,
           description: activity.description,
           duration: activity.duration,
-        },
+        } as unknown as Prisma.JsonObject,
         totalAmount: parseFloat(activity.price.total),
         currency: activity.price.currency,
       },
@@ -275,7 +275,7 @@ export class BookingService {
       data: {
         hasConflicts: conflicts.some(c => c.severity === 'ERROR'),
         lastValidatedAt: new Date(),
-        conflictDetails: conflicts,
+        conflictDetails: conflicts as unknown as Prisma.JsonArray,
       },
     });
 
@@ -453,7 +453,7 @@ export class BookingService {
         data: {
           hasConflicts: conflicts.some(c => c.severity === 'ERROR'),
           lastValidatedAt: new Date(),
-          conflictDetails: conflicts,
+          conflictDetails: conflicts as unknown as Prisma.JsonArray,
         },
       });
     }
@@ -481,7 +481,8 @@ export class BookingService {
         trip: {
           select: {
             id: true,
-            destination: true,
+            title: true,
+            destinations: true,
             startDate: true,
             endDate: true,
           },

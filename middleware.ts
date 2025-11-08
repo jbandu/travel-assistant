@@ -15,7 +15,7 @@ export function middleware(request: NextRequest) {
   }
 
   // Determine rate limit based on path
-  let rateLimitConfig = RateLimitPresets.general;
+  let rateLimitConfig: { interval: number; maxRequests: number } = RateLimitPresets.general;
 
   if (request.nextUrl.pathname.startsWith('/api/auth')) {
     rateLimitConfig = RateLimitPresets.auth;

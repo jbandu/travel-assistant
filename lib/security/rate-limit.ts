@@ -76,8 +76,8 @@ function getClientIdentifier(request: NextRequest): string {
     return realIp;
   }
 
-  // Fallback to request IP
-  return request.ip || 'unknown';
+  // Fallback to unknown if no IP headers found
+  return 'unknown';
 }
 
 /**
