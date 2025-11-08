@@ -71,11 +71,14 @@ export default defineConfig({
     // },
   ],
 
-  // Run your local dev server before starting the tests
-  webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:3002',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000,
-  },
+  // Run local dev server only when testing locally (not against external URL)
+  // When PLAYWRIGHT_TEST_BASE_URL is set to external URL (e.g., Vercel), skip webServer
+  webServer: process.env.PLAYWRIGHT_TEST_BASE_URL?.startsWith('https://')
+    ? undefined
+    : {
+        command: 'npm run dev',
+        url: 'http://localhost:3002',
+        reuseExistingServer: !process.env.CI,
+        timeout: 120 * 1000,
+      },
 });
