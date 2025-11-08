@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import type { HotelOffer } from '@/lib/integrations/amadeus-client';
 
@@ -14,7 +15,16 @@ interface HotelSearchForm {
   priceRange: string;
 }
 
+interface Trip {
+  id: string;
+  title: string;
+  startDate: string;
+  endDate: string;
+}
+
 export default function HotelSearchPage() {
+  const router = useRouter();
+
   const [formData, setFormData] = useState<HotelSearchForm>({
     cityCode: '',
     checkInDate: '',
@@ -27,6 +37,27 @@ export default function HotelSearchPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [results, setResults] = useState<any>(null);
+  const [trips, setTrips] = useState<Trip[]>([]);
+  const [showBookingModal, setShowBookingModal] = useState(false);
+  const [selectedHotel, setSelectedHotel] = useState<HotelOffer | null>(null);
+  const [selectedTripId, setSelectedTripId] = useState<string>('');
+  const [booking, setBooking] = useState(false);
+
+  useEffect(() => {
+    fetchTrips();
+  }, []);
+
+  const fetchTrips = async () => {
+    try {
+      const response = await fetch('/api/trips');
+      if (response.ok) {
+        const data = await response.json();
+        setTrips(data.trips || []);
+      }
+    } catch (err) {
+      console.error('Error fetching trips:', err);
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -62,6 +93,62 @@ export default function HotelSearchPage() {
       setError('An error occurred while searching. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSelectHotel = (hotel: HotelOffer) => {
+    setSelectedHotel(hotel);
+    setShowBookingModal(true);
+  };
+
+  const handleBookHotel = async () => {
+    if (!selectedTripId || !selectedHotel) {
+      return;
+    }
+
+    setBooking(true);
+    setError('');
+
+    try {
+      const offer = selectedHotel.offers[0];
+
+      const hotelOffer = {
+        hotelId: selectedHotel.hotel.hotelId,
+        name: selectedHotel.hotel.name,
+        cityCode: formData.cityCode,
+        checkInDate: offer.checkInDate,
+        checkOutDate: offer.checkOutDate,
+        price: {
+          total: offer.price.total,
+          currency: offer.price.currency,
+        },
+        roomType: offer.room.description.text,
+        address: selectedHotel.hotel.address?.lines?.join(', '),
+      };
+
+      const response = await fetch('/api/bookings/hotels', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tripId: selectedTripId,
+          hotelOffer,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || 'Failed to book hotel');
+        setBooking(false);
+        return;
+      }
+
+      // Success - navigate to itinerary
+      setShowBookingModal(false);
+      router.push(`/trips/${selectedTripId}/itinerary`);
+    } catch (err) {
+      setError('An error occurred while booking. Please try again.');
+      setBooking(false);
     }
   };
 
@@ -223,7 +310,11 @@ export default function HotelSearchPage() {
 
             <div className="space-y-4">
               {results.results.map((hotel: HotelOffer, index: number) => (
-                <HotelCard key={hotel.hotel.hotelId} hotel={hotel} />
+                <HotelCard
+                  key={hotel.hotel.hotelId}
+                  hotel={hotel}
+                  onSelect={() => handleSelectHotel(hotel)}
+                />
               ))}
             </div>
           </div>
@@ -243,11 +334,91 @@ export default function HotelSearchPage() {
           </div>
         )}
       </main>
+
+      {/* Booking Modal */}
+      {showBookingModal && selectedHotel && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+              Book Hotel
+            </h2>
+
+            <div className="mb-6">
+              <div className="bg-purple-50 dark:bg-purple-900/30 rounded-lg p-4 mb-4">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Hotel Summary</p>
+                <p className="text-lg font-bold text-gray-900 dark:text-white">
+                  {selectedHotel.hotel.name}
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                  ${selectedHotel.offers[0].price.total}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {new Date(selectedHotel.offers[0].checkInDate).toLocaleDateString()} -{' '}
+                  {new Date(selectedHotel.offers[0].checkOutDate).toLocaleDateString()}
+                </p>
+              </div>
+
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Select Trip
+              </label>
+              <select
+                value={selectedTripId}
+                onChange={(e) => setSelectedTripId(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+              >
+                <option value="">Choose a trip...</option>
+                {trips.map((trip) => (
+                  <option key={trip.id} value={trip.id}>
+                    {trip.title} ({new Date(trip.startDate).toLocaleDateString()})
+                  </option>
+                ))}
+              </select>
+
+              {trips.length === 0 && (
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                  No trips found.{' '}
+                  <Link href="/trips/plan" className="text-purple-600 hover:underline">
+                    Create a trip
+                  </Link>
+                </p>
+              )}
+            </div>
+
+            {error && (
+              <div className="mb-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg text-sm">
+                {error}
+              </div>
+            )}
+
+            <div className="flex space-x-3">
+              <button
+                onClick={() => {
+                  setShowBookingModal(false);
+                  setSelectedHotel(null);
+                  setSelectedTripId('');
+                  setError('');
+                }}
+                disabled={booking}
+                className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleBookHotel}
+                disabled={!selectedTripId || booking}
+                className="flex-1 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {booking ? 'Booking...' : 'Confirm Booking'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function HotelCard({ hotel }: { hotel: HotelOffer }) {
+function HotelCard({ hotel, onSelect }: { hotel: HotelOffer; onSelect: () => void }) {
   const offer = hotel.offers[0];
   const checkIn = new Date(offer.checkInDate);
   const checkOut = new Date(offer.checkOutDate);
@@ -352,8 +523,11 @@ function HotelCard({ hotel }: { hotel: HotelOffer }) {
                 </p>
               )}
             </div>
-            <button className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition">
-              View Details
+            <button
+              onClick={onSelect}
+              className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition"
+            >
+              Select Hotel
             </button>
           </div>
         </div>

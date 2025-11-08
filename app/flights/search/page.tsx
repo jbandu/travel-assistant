@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 
 interface FlightSearchForm {
@@ -15,7 +16,16 @@ interface FlightSearchForm {
   nonStop: boolean;
 }
 
+interface Trip {
+  id: string;
+  title: string;
+  startDate: string;
+  endDate: string;
+}
+
 export default function FlightSearchPage() {
+  const router = useRouter();
+
   const [formData, setFormData] = useState<FlightSearchForm>({
     origin: '',
     destination: '',
@@ -30,6 +40,27 @@ export default function FlightSearchPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [results, setResults] = useState<any>(null);
+  const [trips, setTrips] = useState<Trip[]>([]);
+  const [showBookingModal, setShowBookingModal] = useState(false);
+  const [selectedFlight, setSelectedFlight] = useState<any>(null);
+  const [selectedTripId, setSelectedTripId] = useState<string>('');
+  const [booking, setBooking] = useState(false);
+
+  useEffect(() => {
+    fetchTrips();
+  }, []);
+
+  const fetchTrips = async () => {
+    try {
+      const response = await fetch('/api/trips');
+      if (response.ok) {
+        const data = await response.json();
+        setTrips(data.trips || []);
+      }
+    } catch (err) {
+      console.error('Error fetching trips:', err);
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -67,6 +98,46 @@ export default function FlightSearchPage() {
       setError('An error occurred while searching. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSelectFlight = (flight: any) => {
+    setSelectedFlight(flight);
+    setShowBookingModal(true);
+  };
+
+  const handleBookFlight = async () => {
+    if (!selectedTripId || !selectedFlight) {
+      return;
+    }
+
+    setBooking(true);
+    setError('');
+
+    try {
+      const response = await fetch('/api/bookings/flights', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tripId: selectedTripId,
+          flightOffer: selectedFlight,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || 'Failed to book flight');
+        setBooking(false);
+        return;
+      }
+
+      // Success - navigate to itinerary
+      setShowBookingModal(false);
+      router.push(`/trips/${selectedTripId}/itinerary`);
+    } catch (err) {
+      setError('An error occurred while booking. Please try again.');
+      setBooking(false);
     }
   };
 
@@ -280,7 +351,12 @@ export default function FlightSearchPage() {
 
             <div className="space-y-4">
               {results.results.map((flight: any, index: number) => (
-                <FlightCard key={flight.id} flight={flight} index={index} />
+                <FlightCard
+                  key={flight.id}
+                  flight={flight}
+                  index={index}
+                  onSelect={() => handleSelectFlight(flight)}
+                />
               ))}
             </div>
           </div>
@@ -300,11 +376,88 @@ export default function FlightSearchPage() {
           </div>
         )}
       </main>
+
+      {/* Booking Modal */}
+      {showBookingModal && selectedFlight && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+              Book Flight
+            </h2>
+
+            <div className="mb-6">
+              <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4 mb-4">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Flight Summary</p>
+                <p className="text-lg font-bold text-gray-900 dark:text-white">
+                  ${selectedFlight.price.grandTotal}
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  {selectedFlight.itineraries[0].segments[0].departure.iataCode} →{' '}
+                  {selectedFlight.itineraries[0].segments[selectedFlight.itineraries[0].segments.length - 1].arrival.iataCode}
+                </p>
+              </div>
+
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Select Trip
+              </label>
+              <select
+                value={selectedTripId}
+                onChange={(e) => setSelectedTripId(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+              >
+                <option value="">Choose a trip...</option>
+                {trips.map((trip) => (
+                  <option key={trip.id} value={trip.id}>
+                    {trip.title} ({new Date(trip.startDate).toLocaleDateString()})
+                  </option>
+                ))}
+              </select>
+
+              {trips.length === 0 && (
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                  No trips found.{' '}
+                  <Link href="/trips/plan" className="text-blue-600 hover:underline">
+                    Create a trip
+                  </Link>
+                </p>
+              )}
+            </div>
+
+            {error && (
+              <div className="mb-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg text-sm">
+                {error}
+              </div>
+            )}
+
+            <div className="flex space-x-3">
+              <button
+                onClick={() => {
+                  setShowBookingModal(false);
+                  setSelectedFlight(null);
+                  setSelectedTripId('');
+                  setError('');
+                }}
+                disabled={booking}
+                className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleBookFlight}
+                disabled={!selectedTripId || booking}
+                className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {booking ? 'Booking...' : 'Confirm Booking'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function FlightCard({ flight, index }: { flight: any; index: number }) {
+function FlightCard({ flight, index, onSelect }: { flight: any; index: number; onSelect: () => void }) {
   const outbound = flight.itineraries[0];
   const returnFlight = flight.itineraries[1];
   const firstSegment = outbound.segments[0];
@@ -387,7 +540,10 @@ function FlightCard({ flight, index }: { flight: any; index: number }) {
               per person
             </div>
           </div>
-          <button className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition">
+          <button
+            onClick={onSelect}
+            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition"
+          >
             Select Flight
           </button>
         </div>
