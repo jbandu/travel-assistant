@@ -37,6 +37,7 @@ model User {
   bookings            Booking[]
   conversations       Conversation[]
   linkedCompanions    TravelCompanion[] // When this user is linked as a companion
+  travelNotes         TravelNote[]
 
   @@map("users")
 }
@@ -515,4 +516,106 @@ model Experience {
   @@index([experienceType])
   @@index([destination])
   @@map("experiences")
+}
+
+// Smart Travel Notes - Voice/text notes with LLM interpretation
+model TravelNote {
+  id                String      @id @default(uuid())
+  userId            String      @map("user_id")
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Original input
+  noteText          String      @map("note_text") @db.Text
+  inputMethod       String      @default("text") @map("input_method") // text, voice
+  voiceTranscript   String?     @map("voice_transcript") @db.Text
+
+  // LLM-parsed structured data
+  category          String      // hotel, restaurant, flight, seat, activity, general, transportation
+  subject           String?     // Hotel name, restaurant name, flight number, etc.
+  sentiment         String      @default("neutral") // positive, negative, neutral
+
+  // Extracted details (JSON)
+  parsedData        Json        @default("{}") @map("parsed_data")
+  // Example: { "hotelName": "Marriott", "roomType": "Suite", "roomNumber": "402", "issue": "noisy", "recommendation": "avoid rooms facing street" }
+
+  // Location
+  locationName      String?     @map("location_name")
+  city              String?
+  country           String?
+  latitude          Float?
+  longitude         Float?
+  placeId           String?     @map("place_id") // Google Places ID if applicable
+
+  // Related entities
+  relatedTripId     String?     @map("related_trip_id")
+  relatedBookingId  String?     @map("related_booking_id")
+
+  // Organization
+  tags              String[]    @default([])
+  isActionable      Boolean     @default(false) @map("is_actionable") // Requires action/reminder
+  priority          String      @default("normal") // low, normal, high
+
+  // Contradiction detection
+  supersededById    String?     @map("superseded_by_id") // If overridden by newer note
+  supersedes        String[]    @default([]) // IDs of notes this overrides
+  hasContradiction  Boolean     @default(false) @map("has_contradiction")
+
+  // Metadata
+  noteDate          DateTime    @default(now()) @map("note_date") // When the experience happened
+
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  reminders         TravelNoteReminder[]
+
+  @@index([userId])
+  @@index([category])
+  @@index([sentiment])
+  @@index([locationName])
+  @@index([noteDate])
+  @@map("travel_notes")
+}
+
+// Travel Note Reminders - Location and time-based notifications
+model TravelNoteReminder {
+  id                String      @id @default(uuid())
+  noteId            String      @map("note_id")
+  note              TravelNote  @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  userId            String      @map("user_id")
+
+  // Trigger type
+  triggerType       String      @map("trigger_type") // location, time, booking
+
+  // Location-based trigger
+  triggerLocationName   String?     @map("trigger_location_name")
+  triggerLatitude       Float?      @map("trigger_latitude")
+  triggerLongitude      Float?      @map("trigger_longitude")
+  proximityRadius       Int?        @map("proximity_radius") // meters
+
+  // Time-based trigger
+  triggerTime           DateTime?   @map("trigger_time")
+  reminderOffset        String?     @map("reminder_offset") // "1 day before", "2 hours before"
+
+  // Booking-based trigger
+  relatedBookingId      String?     @map("related_booking_id")
+  triggerPhase          String?     @map("trigger_phase") // "seat_selection", "check_in", "at_destination"
+
+  // Notification
+  notificationSent      Boolean     @default(false) @map("notification_sent")
+  notificationSentAt    DateTime?   @map("notification_sent_at")
+  notificationChannel   String      @default("app") @map("notification_channel") // app, email, sms
+
+  // Status
+  isActive              Boolean     @default(true) @map("is_active")
+  expiresAt             DateTime?   @map("expires_at")
+
+  createdAt             DateTime    @default(now()) @map("created_at")
+  updatedAt             DateTime    @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([triggerType])
+  @@index([isActive])
+  @@index([notificationSent])
+  @@map("travel_note_reminders")
 }
