@@ -17,10 +17,10 @@ test.describe('Dashboard', () => {
 
   test('should show statistics cards', async ({ page }) => {
     // Check for stat cards - use more specific selectors to avoid strict mode violations
-    await expect(page.locator('text=Total Trips')).first().toBeVisible();
+    await expect(page.locator('text=Total Trips').first()).toBeVisible();
     await expect(page.locator('p.uppercase:has-text("Bookings")')).toBeVisible();
-    await expect(page.locator('text=Conversations')).first().toBeVisible();
-    await expect(page.locator('text=Favorites')).first().toBeVisible();
+    await expect(page.locator('text=Conversations').first()).toBeVisible();
+    await expect(page.locator('text=Favorites').first()).toBeVisible();
   });
 
   test('should show feature cards', async ({ page }) => {
@@ -49,7 +49,7 @@ test.describe('Dashboard', () => {
 
   test('Search Flights button should navigate to flight search', async ({ page }) => {
     // Click feature card, not banner - use more specific selector
-    await page.click('a[href="/flights/search"]:has-text("Search Flights")').first();
+    await page.locator('a[href="/flights/search"]:has-text("Search Flights")').first().click();
     await expect(page).toHaveURL(/\/flights\/search/);
   });
 
