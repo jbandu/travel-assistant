@@ -3,19 +3,7 @@
  * Wrapper for OpenAI API with error handling and retry logic
  */
 
-interface ChatMessage {
-  role: 'system' | 'user' | 'assistant';
-  content: string;
-}
-
-interface ChatCompletionResponse {
-  message: string;
-  usage?: {
-    promptTokens: number;
-    completionTokens: number;
-    totalTokens: number;
-  };
-}
+import { ChatMessage, ChatCompletionResponse, ChatOptions } from './types';
 
 export class OpenAIClient {
   private apiKey: string;
@@ -34,11 +22,7 @@ export class OpenAIClient {
 
   async chat(
     messages: ChatMessage[],
-    options?: {
-      temperature?: number;
-      maxTokens?: number;
-      stream?: boolean;
-    }
+    options?: ChatOptions
   ): Promise<ChatCompletionResponse> {
     // If no API key, return mock response
     if (!this.apiKey) {
@@ -77,6 +61,8 @@ export class OpenAIClient {
           completionTokens: data.usage.completion_tokens,
           totalTokens: data.usage.total_tokens,
         },
+        model: this.model,
+        provider: 'openai',
       };
     } catch (error) {
       console.error('OpenAI API error:', error);
@@ -146,6 +132,12 @@ The more I know, the better I can tailor my recommendations! 🌍✈️`;
         completionTokens: 200,
         totalTokens: 300,
       },
+      model: this.model,
+      provider: 'openai',
     };
+  }
+
+  isAvailable(): boolean {
+    return !!this.apiKey;
   }
 }

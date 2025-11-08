@@ -42,11 +42,34 @@ model UserProfile {
   preferences Json @default("{}")
   // Example structure:
   // {
-  //   "preferredCabinClass": "economy",
+  //   // Trip Planning Preferences
+  //   "interests": ["beach", "culture", "adventure", "food", "nightlife", "nature", "history"],
+  //   "travelStyle": "budget" | "mid-range" | "luxury",
+  //   "preferredBudgetRange": { "min": 1000, "max": 5000, "currency": "USD" },
+  //   "accommodationType": ["hotel", "hostel", "airbnb", "resort"],
+  //   "activityLevel": "relaxed" | "moderate" | "active",
+  //   "groupPreference": "solo" | "couple" | "family" | "friends",
+  //
+  //   // Travel History & Context
+  //   "visitedCountries": ["USA", "FRA", "JPN"],
+  //   "favoriteDestinations": ["Paris", "Tokyo", "New York"],
+  //   "bucketList": ["Iceland", "New Zealand", "Machu Picchu"],
+  //   "pastTrips": [{"destination": "Paris", "rating": 5, "highlights": "Eiffel Tower, Louvre"}],
+  //
+  //   // Flight Preferences
+  //   "preferredCabinClass": "economy" | "premium_economy" | "business" | "first",
   //   "preferredAirlines": ["UA", "DL"],
-  //   "seatPreference": "window",
-  //   "mealPreference": "vegetarian",
-  //   "dietaryRestrictions": [],
+  //   "seatPreference": "window" | "aisle" | "middle",
+  //   "mealPreference": "vegetarian" | "vegan" | "halal" | "kosher" | "standard",
+  //   "dietaryRestrictions": ["gluten-free", "nut-allergy"],
+  //
+  //   // Personal Context
+  //   "age": 30,
+  //   "occupation": "Software Engineer",
+  //   "languages": ["English", "Spanish"],
+  //   "timezone": "America/New_York",
+  //
+  //   // Notification Preferences
   //   "notificationPreferences": {
   //     "email": true,
   //     "sms": false,

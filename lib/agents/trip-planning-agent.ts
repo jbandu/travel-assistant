@@ -4,13 +4,22 @@
  */
 
 import { BaseAgent, Message, AgentContext, AgentResponse } from './base-agent';
-import { OpenAIClient } from '../llm/openai-client';
+import { ModelRouter } from '../llm';
+import { WeatherService } from '../weather';
 
 export class TripPlanningAgent extends BaseAgent {
-  private llmClient: OpenAIClient;
+  private llmRouter: ModelRouter;
+  private weatherService: WeatherService;
 
-  constructor() {
-    const systemPrompt = `You are an expert travel planning AI assistant with deep knowledge of global destinations, travel logistics, and budget optimization.
+  constructor(userProfile?: any) {
+    const systemPrompt = TripPlanningAgent.buildSystemPrompt(userProfile);
+    super('trip_planning', systemPrompt);
+    this.llmRouter = new ModelRouter();
+    this.weatherService = new WeatherService();
+  }
+
+  private static buildSystemPrompt(userProfile?: any): string {
+    let basePrompt = `You are an expert travel planning AI assistant with deep knowledge of global destinations, travel logistics, and budget optimization.
 
 Your role:
 - Help travelers discover perfect destinations based on their preferences, budget, and interests
@@ -26,9 +35,57 @@ Guidelines:
 - Provide specific, actionable recommendations
 - Always consider safety, visa requirements, and travel logistics
 - Ask follow-up questions to refine recommendations
-- Format responses clearly with headers and bullet points
+- Format responses clearly with headers and bullet points`;
 
-Key information to gather:
+    // Add user profile context if available
+    if (userProfile && userProfile.preferences) {
+      const prefs = userProfile.preferences;
+      basePrompt += `\n\n--- USER PROFILE CONTEXT ---\nYou are assisting ${userProfile.firstName || 'a traveler'}. Use this context to provide personalized recommendations:\n`;
+
+      if (prefs.interests && prefs.interests.length > 0) {
+        basePrompt += `\n🎯 Interests: ${prefs.interests.join(', ')}`;
+      }
+
+      if (prefs.travelStyle) {
+        basePrompt += `\n💰 Travel Style: ${prefs.travelStyle} (${prefs.travelStyle === 'budget' ? 'cost-conscious, value-oriented' : prefs.travelStyle === 'luxury' ? 'premium experiences, high-end accommodations' : 'balanced comfort and value'})`;
+      }
+
+      if (prefs.preferredBudgetRange) {
+        basePrompt += `\n💵 Typical Budget: $${prefs.preferredBudgetRange.min}-$${prefs.preferredBudgetRange.max} ${prefs.preferredBudgetRange.currency || 'USD'}`;
+      }
+
+      if (prefs.activityLevel) {
+        basePrompt += `\n⚡ Activity Level: ${prefs.activityLevel}`;
+      }
+
+      if (prefs.groupPreference) {
+        basePrompt += `\n👥 Usually travels: ${prefs.groupPreference}`;
+      }
+
+      if (prefs.visitedCountries && prefs.visitedCountries.length > 0) {
+        basePrompt += `\n✈️  Previously visited: ${prefs.visitedCountries.join(', ')}`;
+      }
+
+      if (prefs.favoriteDestinations && prefs.favoriteDestinations.length > 0) {
+        basePrompt += `\n❤️  Favorite destinations: ${prefs.favoriteDestinations.join(', ')}`;
+      }
+
+      if (prefs.bucketList && prefs.bucketList.length > 0) {
+        basePrompt += `\n📋 Bucket list: ${prefs.bucketList.join(', ')}`;
+      }
+
+      if (prefs.dietaryRestrictions && prefs.dietaryRestrictions.length > 0) {
+        basePrompt += `\n🍽️  Dietary needs: ${prefs.dietaryRestrictions.join(', ')}`;
+      }
+
+      if (prefs.languages && prefs.languages.length > 0) {
+        basePrompt += `\n🗣️  Languages: ${prefs.languages.join(', ')}`;
+      }
+
+      basePrompt += `\n\nIMPORTANT: Use this context proactively. Make recommendations that align with their interests, budget, and travel style. Reference their past trips when relevant. Avoid suggesting places they've already visited unless they specifically ask. Prioritize destinations from their bucket list when appropriate.`;
+    }
+
+    basePrompt += `\n\nKey information to gather (if not in profile):
 1. Budget (total or per day)
 2. Duration (number of days)
 3. Interests (beach, culture, adventure, food, nightlife, etc.)
@@ -44,8 +101,7 @@ When you have enough information, suggest 3-5 destinations with:
 - Must-see attractions
 - Local tips and insider recommendations`;
 
-    super('trip_planning', systemPrompt);
-    this.llmClient = new OpenAIClient();
+    return basePrompt;
   }
 
   async processMessage(
@@ -57,15 +113,16 @@ When you have enough information, suggest 3-5 destinations with:
       // Format messages for LLM
       const messages = this.formatMessages(userMessage, conversationHistory);
 
-      // Call LLM
-      const response = await this.llmClient.chat(
+      // Call LLM Router (automatically selects best model)
+      const response = await this.llmRouter.chat(
         messages.map((m) => ({
           role: m.role as 'system' | 'user' | 'assistant',
           content: m.content,
         })),
         {
           temperature: 0.7,
-          maxTokens: 1000,
+          maxTokens: 2000,
+          context, // Pass context for complexity analysis
         }
       );
 
@@ -186,5 +243,68 @@ When you have enough information, suggest 3-5 destinations with:
     }
 
     return suggestions.slice(0, 3);
+  }
+
+  /**
+   * Get weather insights for a destination
+   * Can be called separately or integrated into trip planning
+   */
+  async getWeatherInsights(
+    destination: string,
+    startDate?: Date,
+    endDate?: Date
+  ) {
+    const start = startDate || new Date();
+    const end = endDate || new Date(start.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    try {
+      const insights = await this.weatherService.getWeatherInsights(
+        destination,
+        start,
+        end
+      );
+
+      return {
+        success: true,
+        insights,
+        formatted: this.formatWeatherInsights(insights),
+      };
+    } catch (error) {
+      console.error('Weather insights error:', error);
+      return {
+        success: false,
+        error: 'Unable to fetch weather information',
+      };
+    }
+  }
+
+  /**
+   * Format weather insights for display
+   */
+  private formatWeatherInsights(insights: any): string {
+    let formatted = `\n\n### 🌤️ Weather Insights for ${insights.destination}\n\n`;
+    formatted += `${insights.summary}\n\n`;
+
+    formatted += `**🎒 Packing Recommendations:**\n`;
+    insights.packingRecommendations.slice(0, 8).forEach((item: string) => {
+      formatted += `- ${item}\n`;
+    });
+
+    formatted += `\n**🎯 Recommended Activities:**\n`;
+    formatted += `\nOutdoor Activities (on nice days):\n`;
+    insights.activitySuggestions.outdoor.slice(0, 3).forEach((activity: string) => {
+      formatted += `- ${activity}\n`;
+    });
+
+    formatted += `\nIndoor Activities (backup options):\n`;
+    insights.activitySuggestions.indoor.slice(0, 3).forEach((activity: string) => {
+      formatted += `- ${activity}\n`;
+    });
+
+    if (insights.bestDays && insights.bestDays.length > 0) {
+      formatted += `\n**📅 Best Days for Outdoor Activities:** ${insights.bestDays.join(', ')}\n`;
+    }
+
+    return formatted;
   }
 }
