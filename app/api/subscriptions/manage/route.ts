@@ -86,7 +86,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     // Cancel subscription at period end (user keeps access until end of billing period)
-    const subscription = await stripe.subscriptions.update(
+    const subscription: any = await stripe.subscriptions.update(
       user.stripeSubscriptionId,
       {
         cancel_at_period_end: true,
