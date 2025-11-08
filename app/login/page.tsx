@@ -105,21 +105,11 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Test Accounts Info */}
+          {/* Footer Info */}
           <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
-            <p className="text-xs text-gray-500 dark:text-gray-400 text-center mb-3">
-              Test Admin Accounts:
+            <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
+              Secure Login • AI-Powered Travel Planning
             </p>
-            <div className="space-y-2 text-xs">
-              <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
-                <p className="font-medium text-gray-700 dark:text-gray-300">jbandu@gmail.com</p>
-                <p className="text-gray-500 dark:text-gray-400">Password@123!</p>
-              </div>
-              <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
-                <p className="font-medium text-gray-700 dark:text-gray-300">arindam2808@gmail.com</p>
-                <p className="text-gray-500 dark:text-gray-400">Password@123!</p>
-              </div>
-            </div>
           </div>
         </div>
       </div>
