@@ -225,11 +225,14 @@ function StatCard({
   color: string;
 }) {
   return (
-    <div className={`${color} rounded-xl p-6 border border-gray-200 dark:border-gray-700`}>
-      <div className="flex items-center justify-between mb-4">
+    <div className={`${color} rounded-xl p-6 border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow`}>
+      <div className="flex items-center justify-between mb-3">
         <span className="text-3xl">{icon}</span>
       </div>
-      <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
+      <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+        {title}
+      </p>
+      <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
         {value}
       </h3>
       <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -253,23 +256,29 @@ function FeatureCard({
   disabled?: boolean;
   href?: string;
 }) {
-  const buttonClass = `w-full px-4 py-2 text-sm font-medium rounded-lg transition ${
+  const cardClass = `bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-700 transition ${
     disabled
-      ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-500 cursor-not-allowed'
-      : 'bg-blue-600 hover:bg-blue-700 text-white'
+      ? 'opacity-75'
+      : 'hover:shadow-lg hover:border-blue-300 dark:hover:border-blue-600'
+  }`;
+
+  const buttonClass = `w-full px-4 py-2.5 text-sm font-medium rounded-lg transition-all ${
+    disabled
+      ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed border border-gray-300 dark:border-gray-600'
+      : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white shadow-sm hover:shadow-md'
   }`;
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition">
-      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+    <div className={cardClass}>
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
         {title}
       </h3>
-      <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+      <p className="text-sm text-gray-600 dark:text-gray-400 mb-5 min-h-[40px]">
         {description}
       </p>
       {disabled || !href ? (
         <button disabled={disabled} className={buttonClass}>
-          {disabled ? 'Coming Soon' : action}
+          {disabled ? '🔒 Coming Soon' : action}
         </button>
       ) : (
         <a href={href} className={`block text-center ${buttonClass}`}>
