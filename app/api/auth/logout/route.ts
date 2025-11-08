@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server';
+import { redirect } from 'next/navigation';
 import { removeAuthCookie } from '@/lib/auth';
 
 export async function POST() {
   try {
     await removeAuthCookie();
 
-    return NextResponse.json({ success: true });
+    // Redirect to login page after successful logout
+    redirect('/login');
   } catch (error) {
     console.error('Logout error:', error);
     return NextResponse.json(

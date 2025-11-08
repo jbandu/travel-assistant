@@ -16,11 +16,11 @@ test.describe('Dashboard', () => {
   });
 
   test('should show statistics cards', async ({ page }) => {
-    // Check for stat cards
-    await expect(page.locator('text=Total Trips')).toBeVisible();
-    await expect(page.locator('text=Bookings')).toBeVisible();
-    await expect(page.locator('text=Conversations')).toBeVisible();
-    await expect(page.locator('text=Favorites')).toBeVisible();
+    // Check for stat cards - use more specific selectors to avoid strict mode violations
+    await expect(page.locator('text=Total Trips')).first().toBeVisible();
+    await expect(page.locator('p.uppercase:has-text("Bookings")')).toBeVisible();
+    await expect(page.locator('text=Conversations')).first().toBeVisible();
+    await expect(page.locator('text=Favorites')).first().toBeVisible();
   });
 
   test('should show feature cards', async ({ page }) => {
@@ -32,7 +32,7 @@ test.describe('Dashboard', () => {
 
   test('should show new features live banner', async ({ page }) => {
     await expect(page.locator('text=/New Features Now Live/i')).toBeVisible();
-    await expect(page.locator('a:has-text("Try Trip Planning")').first()).toBeVisible();
+    await expect(page.locator('a:has-text("Plan Trip")').first()).toBeVisible();
     await expect(page.locator('a:has-text("Search Flights")').first()).toBeVisible();
   });
 

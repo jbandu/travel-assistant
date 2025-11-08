@@ -11,8 +11,8 @@ test.describe('Trip Planning Agent', () => {
   });
 
   test('should navigate to trip planning agent from dashboard', async ({ page }) => {
-    // Click on Plan Trip button
-    await page.click('text=/Plan Trip|Start Planning/i');
+    // Click on Plan Trip button - use more specific selector to avoid ambiguity
+    await page.click('a[href="/trips/plan"]:has-text("Start Planning")');
 
     // Should navigate to trip planning page
     await expect(page).toHaveURL(/\/trips\/plan/);
@@ -123,8 +123,8 @@ test.describe('Trip Planning Agent', () => {
   test('should navigate back to dashboard', async ({ page }) => {
     await page.goto('/trips/plan');
 
-    // Click back button
-    await page.click('svg[viewBox="0 0 24 24"]').first(); // Back arrow
+    // Click back button - use link href instead of generic SVG selector
+    await page.click('a[href="/dashboard"]');
 
     // Should return to dashboard
     await expect(page).toHaveURL(/\/dashboard/);
