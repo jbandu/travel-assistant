@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Get Stripe subscription details if exists
-    let stripeSubscription = null;
+    let stripeSubscription: any = null;
     if (user.stripeSubscriptionId) {
       try {
         stripeSubscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
